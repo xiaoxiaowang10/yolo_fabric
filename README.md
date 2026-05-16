@@ -2,6 +2,14 @@
 
 基于 YOLO26 的面料图像分类，支持训练、推理、多模型对比、Web 可视化部署。
 
+## 数据来源
+```bash
+ibug : https://www.kaggle.com/datasets/orchit/the-fabrics-dataset-by-ibug
+wisudaa : https://universe.roboflow.com/ta-rgrwi/wisudaa
+fabric_yolo26: https://universe.roboflow.com/sai-amar-cv4kg/fabric-qxgmo/dataset/1
+deep_learning_testing: https://universe.roboflow.com/group-12-mcgzh/deep-learning-testing/dataset/1
+```
+
 ## 快速开始
 
 ```bash
