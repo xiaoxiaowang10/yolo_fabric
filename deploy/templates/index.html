@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织物智能分类</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="header">
+  <h1>🧵 织物智能分类</h1>
+  <sub>Deep Learning | {{ class_count }} 类面料识别 | 多模型对比</sub>
+</div>
+
+<meta id="webcam-interval" data-value="{{ webcam_interval_ms }}"></meta>
+
+<div class="model-bar">
+  <span>模型</span>
+  <select id="model-select" data-default="{{ default or '' }}"></select>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="upload">🖼️ 图片上传</div>
+    <div class="tab" data-tab="webcam">📷 实时拍照</div>
+    <div class="tab" data-tab="compare">📊 模型对比</div>
+    <div class="tab" data-tab="classes">📋 类别总览</div>
+  </div>
+
+  <!-- ════ 图片上传 ════ -->
+  <div id="panel-upload" class="panel active">
+    <div class="panel-wrap">
+      <div class="upload-row">
+        <div class="upload-area" id="drop-zone">
+          <div class="spinner-overlay" id="upload-spinner"><div class="spinner"></div></div>
+          <img id="preview" alt="">
+          <div id="upload-placeholder" class="upload-placeholder">
+            <span class="upload-icon">📁</span>
+            <span class="upload-hint">点击选择图片<br>或拖拽到此处</span>
+          </div>
+        </div>
+        <div class="results-area">
+          <div id="upload-results"></div>
+          <div id="upload-time" class="time-info"></div>
+          <div id="upload-empty" class="results-empty">选择图片后点击识别</div>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept="image/*">
+    <div class="btn-row">
+      <button class="btn btn-primary" id="upload-btn" disabled>🔍 开始识别</button>
+      <button class="btn btn-outline" id="upload-reset-btn">↺ 清除</button>
+    </div>
+  </div>
+
+  <!-- ════ 实时拍照 ════ -->
+  <div id="panel-webcam" class="panel">
+    <div class="panel-wrap">
+      <select id="webcam-select" class="hidden"></select>
+      <video id="webcam-video" autoplay playsinline muted></video>
+      <canvas id="webcam-canvas"></canvas>
+      <div class="webcam-controls">
+        <button class="btn btn-primary btn-sm" id="webcam-btn">📸 开启摄像头</button>
+        <button class="btn btn-outline btn-sm hidden" id="capture-btn">📷 拍照识别</button>
+        <button class="btn btn-outline btn-sm hidden" id="auto-btn">⏱ 自动</button>
+        <span class="auto-badge" id="auto-badge">自动识别中</span>
+      </div>
+      <div id="webcam-results"></div>
+      <div id="webcam-time" class="time-info"></div>
+    </div>
+  </div>
+
+  <!-- ════ 模型对比 ════ -->
+  <div id="panel-compare" class="panel">
+    <div class="panel-wrap">
+      <div class="compare-upload-row">
+        <div class="model-checklist">
+          <h4>选择对比模型</h4>
+          <div id="model-checklist"></div>
+          <div class="checklist-controls">
+            <button class="btn btn-outline btn-sm btn-block" id="select-all-btn">全选</button>
+            <button class="btn btn-outline btn-sm btn-block" id="deselect-all-btn">取消全选</button>
+          </div>
+        </div>
+        <div>
+          <div class="upload-area" id="compare-drop-zone">
+            <div class="spinner-overlay" id="compare-spinner"><div class="spinner"></div></div>
+            <img id="compare-preview" alt="">
+            <div id="compare-placeholder" class="upload-placeholder">
+              <span class="upload-icon">📁</span>
+              <span class="upload-hint">点击选择图片<br>或拖拽到此处</span>
+            </div>
+          </div>
+          <input type="file" id="compare-file-input" accept="image/*">
+          <div class="btn-row">
+            <button class="btn btn-primary" id="compare-btn" disabled>🔍 对比识别</button>
+            <button class="btn btn-outline" id="compare-reset-btn">↺ 清除</button>
+          </div>
+        </div>
+      </div>
+      <div class="compare-grid" id="compare-results"></div>
+      <div id="compare-empty" class="results-empty">勾选模型 + 选择图片后点击对比识别</div>
+    </div>
+  </div>
+
+  <!-- ════ 类别总览 ════ -->
+  <div id="panel-classes" class="panel">
+    <div class="class-grid" id="class-list"></div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

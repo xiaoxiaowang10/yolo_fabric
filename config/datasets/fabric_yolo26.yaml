@@ -1,0 +1,51 @@
+# ============================================================
+# fabric.yolo26 数据集 (YOLO 检测格式)
+# ============================================================
+# 来源: Roboflow / fabric
+# URL: https://universe.roboflow.com/sai-amar-cv4kg/fabric-qxgmo
+# License: CC BY 4.0
+# 格式: YOLO Detection (train/valid/test images + labels)
+# 总图片: 1,207
+# 预处理: Auto-orientation, Resize 416×416 (Stretch)
+# 增强: 50% hflip, 50% vflip, random crop 0-20%
+# 原始类别 (8):
+#   acrylic  /  cotton  /  crepe  /  denim
+#   leather  /  linen   /  nylon  /  silk
+# 格式说明: 每张图片对应一个 .txt 标签文件 (class_id x y w h)
+#           按标签中主要类别归入对应文件夹
+# ============================================================
+
+raw_data: "data_ori/fabric_yolo26"
+output_dir: "data/d2"
+source_format: "yolo_detection"
+
+classes:
+  - cotton
+  - linen
+  - corduroy
+  - denim
+  - fleece
+  - leather
+  - satin_silk
+  - wool
+
+merge:
+  cotton:
+    - cotton
+  linen:
+    - linen
+  denim:
+    - denim
+  leather:
+    - leather
+  satin_silk:
+    - silk
+
+exclude:
+  - acrylic
+  - crepe
+  - nylon
+
+limits: {}
+
+balance: 600

@@ -1,0 +1,117 @@
+# ============================================================
+# YOLO26 织物分类 —— 全局默认超参数
+# ============================================================
+
+seed: 42
+
+# —— 类别定义 ——（与 ImageFolder 字母序严格一致，YOLO 按此分配输出索引）
+classes:
+  - corduroy
+  - cotton
+  - denim
+  - fleece
+  - leather
+  - linen
+  - satin_silk
+  - wool
+
+class_names:
+  corduroy:              "灯芯绒 / Corduroy"
+  cotton:                "棉布 / Cotton"
+  denim:                 "牛仔 / Denim"
+  fleece:                "绒毛 / Fleece"
+  leather:               "皮革 / Leather"
+  linen:                 "麻布 / Linen"
+  satin_silk:            "丝缎 / Silk"
+  wool:                  "毛呢 / Wool"
+
+
+# —— 数据准备 ——
+prepare:
+  train_subdir: "train"
+  val_subdir: "val"
+  val_split: 0.2
+  image_exts:
+    - ".png"
+    - ".jpg"
+    - ".jpeg"
+    - ".bmp"
+    - ".webp"
+    - ".tiff"
+
+
+# —— 模型训练 ——
+train:
+  pretrained_dir: "weights/pretrained"
+  pretrained: "yolo26s-cls.pt"
+  choices:
+    - yolov8n-cls.pt
+    - yolov8s-cls.pt
+    - yolov8m-cls.pt
+    - yolov8l-cls.pt
+    - yolo11n-cls.pt
+    - yolo11s-cls.pt
+    - yolo11m-cls.pt
+    - yolo11l-cls.pt
+    - yolo26n-cls.pt
+    - yolo26s-cls.pt
+    - yolo26m-cls.pt
+    - yolo26l-cls.pt
+    - yolo26x-cls.pt
+
+  save_dir: "runs/classify"
+  project: ""
+  epochs: 200
+  imgsz: 384
+  rect: true
+  batch: 32
+  lr: 0.001
+  device: "0"
+  workers: 0
+  patience: 20
+  save_period: 10
+  optimizer: "auto"
+  cos_lr: true
+  warmup_epochs: 5
+  weight_decay: 0.001
+  dropout: 0.3
+  amp: false
+  label_smoothing: 0.1
+  hsv_h: 0.03
+  hsv_s: 0.5
+  hsv_v: 0.3
+  degrees: 15
+  translate: 0.15
+  scale: 0.6
+  shear: 5
+  flipud: 0.0
+  fliplr: 0.5
+  erasing: 0.3
+
+
+# —— 推理 ——
+predict:
+  model: "best.pt"
+  imgsz: 384
+  device: "0"
+  top: 3
+  unknown_threshold: 0.6
+  unknown_label: "未识别 / Unknown"
+  video_save_dir: "runs/predict"
+
+
+# —— 模型导出 ——
+export:
+  onnx_output_dir: "deploy/models"     # ONNX 输出目录
+  format: "onnx"                       # 导出格式 (固定 onnx)
+  imgsz: 384                           # 导出推理尺寸，须与训练一致
+  half: false                          # FP16 半精度 (true=体积减半/推理加速)
+  int8: false                          # INT8 量化 (true=最小体积/最快推理/精度略降)
+  dynamic: false                       # 动态 batch 维度 (true=支持任意 batch 推理)
+  batch: 1                             # 导出时固定 batch 大小
+  device: "cpu"                           # 导出设备 (""=自动, "0"=GPU0, "cpu"=CPU)
+  opset: 17                            # ONNX 算子集版本
+  simplify: true                       # onnxsim 简化模型图 (减小体积/加速)
+  workspace: 4.0                       # TensorRT 工作空间大小 (GB)
+  optimize: false                      # 是否优化模型 (一般关闭)
+  nms: false                           # NMS 后处理是否嵌入 ONNX (检测用, 分类忽略)

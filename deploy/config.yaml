@@ -1,0 +1,27 @@
+port: 8564
+models_dir: "models"
+imgsz: 384
+num_threads: 4
+unknown_threshold: 0.6
+unknown_label: "未识别 / Unknown"
+webcam_interval_ms: 1500
+
+classes:
+  - corduroy
+  - cotton
+  - denim
+  - fleece
+  - leather
+  - linen
+  - satin_silk
+  - wool
+
+class_names:
+  corduroy: "灯芯绒 / Corduroy"
+  cotton: "棉布 / Cotton"
+  denim: "牛仔 / Denim"
+  fleece: "绒毛 / Fleece"
+  leather: "皮革 / Leather"
+  linen: "麻布 / Linen"
+  satin_silk: "丝缎 / Silk"
+  wool: "毛呢 / Wool"

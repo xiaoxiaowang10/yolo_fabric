@@ -1,0 +1,5 @@
+onnxruntime
+flask
+pillow
+pillow-heif
+pyyaml

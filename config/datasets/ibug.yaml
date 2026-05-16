@@ -1,0 +1,77 @@
+# ============================================================
+# ibug / iBUG 面料数据集
+# ============================================================
+# 来源: The Fabrics Dataset by iBUG
+# Kaggle: https://www.kaggle.com/datasets/orchit/the-fabrics-dataset-by-ibug
+# 格式: 文件夹结构 (Category/Subfolder/*.png)
+# 总样本: 1,971  |  总图片: 7,877 (每样本 4 张 PNG)
+# 原始类别 (23):
+#   Acrylic  /  Artificial_fur  /  Artificial_leather
+#   Blended  /  Chenille        /  Corduroy
+#   Cotton   /  Crepe           /  Denim
+#   Felt     /  Fleece          /  Leather
+#   Linen    /  Nylon           /  Polyester
+#   Satin    /  Silk            /  Suede
+#   Terrycloth / Unclassified   /  Velvet
+#   Viscose  /  Wool
+# (另有 Utilities / Lut 无有效图片, 已排除)
+#
+# 分类原则: 按材质归并，排除织法类 (Terrycloth/Velvet) 和人造混杂 (Artificial_fur/Chenille)
+# ============================================================
+
+raw_data: "data_ori/ibug"
+output_dir: "data/d1"
+source_format: "auto"
+
+classes:
+  - cotton
+  - linen
+  - corduroy
+  - denim
+  - fleece
+  - leather
+  - satin_silk
+  - wool
+
+merge:
+  cotton:
+    - Cotton
+  linen:
+    - Linen
+  corduroy:
+    - Corduroy
+  denim:
+    - Denim
+  fleece:
+    - Fleece                           # 纯抓绒材质
+  leather:
+    - Leather                           # 真皮
+    - Artificial_leather                # 人造革 (外观近皮)
+  satin_silk:
+    - Silk
+    - Satin
+  wool:
+    - Wool
+
+exclude:
+  - Utilities
+  - Lut
+  - Acrylic
+  - Blended
+  - Chenille
+  - Crepe
+  - Nylon
+  - Polyester
+  - Unclassified
+  - Viscose
+  - Terrycloth                          # 毛巾布 (织法, 非材质)
+  - Velvet                              # 天鹅绒 (织法, 非材质)
+  - Artificial_fur                      # 人造毛 (混杂, 难归类)
+  - Suede                             # 麂皮 (哑光皮质)
+  - Felt                              # 毡 (羊毛压制, 同材质)
+
+
+limits:
+  cotton: 1200
+
+balance: 600 # 0代表不启用，500代表每类样本数调整到500，依此类推

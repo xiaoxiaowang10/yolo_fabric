@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Training outputs
+runs/
+data/
+data_ori/
+
+
+# Models (large binary files)
+*.pt
+*.onnx
+*.engine
+*.tflite
+*.coreml
+*.mlmodel
+
+# IDE & tools
+.vscode/
+.idea/
+.history/
+.ruff_cache/
+
+# Plan documents
+.plan/
+
+# Deploy artifacts
+deploy/fabric-classifier.tar.gz
+deploy/.venv/
