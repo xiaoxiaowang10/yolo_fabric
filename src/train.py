@@ -7,7 +7,9 @@ from src.constants import TRAIN_KEYS
 from src.utils import CFG, CLASSES, log, resolve_model, SEED, set_seed
 
 
-def _build_kwargs(train_cfg: Dict[str, Any], overrides: Dict[str, Any]) -> Dict[str, Any]:
+def _build_kwargs(
+    train_cfg: Dict[str, Any], overrides: Dict[str, Any]
+) -> Dict[str, Any]:
     """构建训练参数"""
     kwargs = {k: train_cfg[k] for k in TRAIN_KEYS & train_cfg.keys()}
     kwargs["lr0"] = overrides.get("lr") or train_cfg["lr"]
@@ -22,9 +24,10 @@ def _save_best(train_cfg: Dict[str, Any], train_name: str, dataset: str) -> None
     """保存并验证最佳模型"""
     root = Path(train_cfg["save_dir"]) / train_cfg["project"] / train_name
     best_pt = root / "weights" / "best.pt"
-    
+
     if best_pt.exists():
-        metrics = YOLO(str(best_pt))(val=True, data=dataset, split=CFG["prepare"]["val_subdir"])
+        model = YOLO(str(best_pt))
+        metrics = model.val(data=dataset, split=CFG["prepare"]["val_subdir"])
         log.info("验证 Top-1: %.2f%%  Top-5: %.2f%%", metrics.top1, metrics.top5)
     log.info("导出: python main.py export --model %s", train_name)
 
@@ -45,7 +48,7 @@ def train(
     """训练新模型"""
     if not train_cfg:
         raise ValueError("train_cfg required")
-    
+
     model_path = resolve_model(model or train_cfg["pretrained"])
     train_dir = Path(data) / "train"
     if not train_dir.is_dir():
@@ -61,6 +64,7 @@ def train(
 
     # 准备配置
     import re, shutil
+
     yaml_scaled = Path(f"config/{name_short}-cls.yaml")
     if not yaml_scaled.exists():
         match = re.match(r"(yolo\d+)", name_short)
@@ -72,9 +76,15 @@ def train(
     kwargs = _build_kwargs(train_cfg, locals())
 
     YOLO(str(yaml_scaled)).load(model_path).train(
-        data=data, name=train_name, seed=SEED, exist_ok=True,
-        pretrained=True, save=True, resume=resume,
-        split=CFG["prepare"]["val_subdir"], **kwargs
+        data=data,
+        name=train_name,
+        seed=SEED,
+        exist_ok=True,
+        pretrained=True,
+        save=True,
+        resume=resume,
+        split=CFG["prepare"]["val_subdir"],
+        **kwargs,
     )
 
     _save_best(train_cfg, train_name, data)
@@ -95,7 +105,7 @@ def continue_train(
     """继续训练已有模型"""
     if not train_cfg:
         raise ValueError("train_cfg required")
-    
+
     model_path = Path(model)
     if not model_path.exists():
         raise FileNotFoundError(f"模型不存在: {model}")
@@ -109,13 +119,23 @@ def continue_train(
 
     dataset = Path(data).name
     train_name = f"{dataset}_{model_path.stem}"
-    log.info("加载: %s | 类别: %d | 保存: %s", model_path.absolute(), len(CLASSES), train_name)
+    log.info(
+        "加载: %s | 类别: %d | 保存: %s",
+        model_path.absolute(),
+        len(CLASSES),
+        train_name,
+    )
 
     kwargs = _build_kwargs(train_cfg, locals())
 
     YOLO(str(model)).train(
-        data=data, name=train_name, seed=SEED, exist_ok=True,
-        save=True, split=CFG["prepare"]["val_subdir"], **kwargs
+        data=data,
+        name=train_name,
+        seed=SEED,
+        exist_ok=True,
+        save=True,
+        split=CFG["prepare"]["val_subdir"],
+        **kwargs,
     )
 
     _save_best(train_cfg, train_name, data)

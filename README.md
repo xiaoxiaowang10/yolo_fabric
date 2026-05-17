@@ -81,16 +81,27 @@ python main.py predict --input_path fabric.jpg --device cpu
 ### 批量导出
 
 ```bash
-python main.py export --model weights/trained/d1_yolo26n.pt
+python main.py export --model <train_name>
+python main.py export --model d1_yolo26n
+python main.py export --model d1_yolo26s
+python main.py export --model d1_yolo26m
 # 导出到 deploy/models/ 并自动生成 deploy/config.yaml
 ```
+### 继续训练
+```bash
+python main.py export --model continue --model runs/classify/<train_name>/weights/best.pt --data <dataset_dir>
+python main.py export --model continue --model runs/classify/d1_yolo26n/weights/best.pt --data data/d5
+```
+
+
+
 
 ## Web 部署 (Flask + ONNX)
 
 ### 导出模型
 
 ```bash
-python main.py export --model runs/classify/d1_yolo26m/weights/best.pt
+python main.py export --model d1_yolo26m
 # .onnx → deploy/models/
 ```
 
