@@ -3,12 +3,7 @@
 基于 YOLO26 的面料图像分类，支持训练、推理、多模型对比、Web 可视化部署。
 
 ## 数据来源
-```bash
-ibug : https://www.kaggle.com/datasets/orchit/the-fabrics-dataset-by-ibug
-wisudaa : https://universe.roboflow.com/ta-rgrwi/wisudaa
-fabric_yolo26: https://universe.roboflow.com/sai-amar-cv4kg/fabric-qxgmo/dataset/1
-deep_learning_testing: https://universe.roboflow.com/group-12-mcgzh/deep-learning-testing/dataset/1
-```
+下载路径在data_ori中
 
 ## 快速开始
 
@@ -22,7 +17,7 @@ pip install -r requirements.txt
 
 ```bash
 python main.py prepare [dataset]        # 数据准备 (默认 ibug)
-python main.py train --data data/d3      # 训练
+python main.py train --data data/d1      # 训练
 python main.py predict --input <路径>    # 推理
 python main.py export                    # 导出 ONNX
 ```
@@ -44,6 +39,44 @@ python main.py train --data data/d1 --model yolo26s-cls.pt
 python main.py train --data data/d1 --model yolo26m-cls.pt
 python main.py train --data data/d1 --model yolo26l-cls.pt
 ```
+
+### 图片推理 (直接使用 .pt 模型)
+
+训练完成后，直接用 `.pt` 文件对图片/目录/视频进行预测，无需先导出 ONNX 或启动 Web 服务。
+
+```bash
+# 单张图片
+python main.py predict --input_path fabric.jpg
+
+# 指定训练好的模型
+python main.py predict --input_path fabric.jpg  --model runs/classify/d1_yolo26n/weights/best.pt
+
+# 显示 Top-5 预测
+python main.py predict --input_path fabric.jpg --top 5
+
+# 设置置信度阈值 (低于阈值返回"未识别")
+python main.py predict --input_path fabric.jpg --threshold 0.6
+
+# 整目录批量预测
+python main.py predict --input_path data_ori/new_fabrics/
+
+# 视频预测 (逐帧识别)
+python main.py predict --input_path video.mp4 --save
+
+# CPU 推理
+python main.py predict --input_path fabric.jpg --device cpu
+```
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--input_path` | 图片/目录/视频路径 | 必填 |
+| `--model` | .pt 模型路径 | `best.pt` (当前目录) |
+| `--top` | 显示 Top-K 预测结果 | 3 |
+| `--threshold` | 置信度阈值 (低于此值返回"未识别") | 0.0 |
+| `--imgsz` | 推理尺寸 | 384 |
+| `--device` | 推理设备 (cpu / 0 / 1) | 0 |
+| `--show` | 实时显示预测画面 (视频) | — |
+| `--save` | 保存预测结果视频 | — |
 
 ### 批量导出
 
@@ -96,7 +129,8 @@ chmod +x start.sh
 │   ├── prepare.py           # 数据准备
 │   ├── train.py             # 模型训练
 │   ├── predict.py           # 模型推理
-│   └── export.py            # 模型导出
+│   ├── export.py            # 模型导出
+│   └── incremental.py       # 增量训练
 ├── weights/                 # 预训练 & 训练后权重
 ├── data_ori/                # 原始数据
 ├── data/                    # 预处理后数据

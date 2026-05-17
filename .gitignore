@@ -5,11 +5,11 @@ __pycache__/
 .venv/
 venv/
 
-# Training outputs
-runs/
-data/
-data_ori/
-
+# Data directories
+data/*
+data_ori/*
+!data_ori/README.md
+runs/*
 
 # Models (large binary files)
 *.pt
