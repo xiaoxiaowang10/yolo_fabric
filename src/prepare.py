@@ -82,6 +82,39 @@ def _collect_roboflow(targets: List[str], src_dir: Path, image_exts: Set[str]) -
     return images
 
 
+def _collect_fabric(targets: List[str], src_dir: Path, image_exts: Set[str], max_total: Optional[int] = None) -> List[ImageInfo]:
+    """从 Fabric 格式收集图片 (train/test 分割结构)
+    
+    Args:
+        targets: 源类别列表 (如 ['canvas', 'chambray', 'gingham', ...])
+        src_dir: 源目录
+        image_exts: 支持的图片扩展名
+        max_total: 所有源类别合并后最多收集的图片数，为None时不限制
+    """
+    target_set = set(targets)
+    images = []
+    
+    for split in ["train", "test"]:
+        split_dir = src_dir / split
+        if not split_dir.is_dir():
+            continue
+        for cat_dir in sorted(split_dir.iterdir()):
+            if not cat_dir.is_dir():
+                continue
+            cat = cat_dir.name
+            if cat not in target_set:
+                continue
+            for file_path in cat_dir.iterdir():
+                if file_path.suffix.lower() in image_exts:
+                    images.append(ImageInfo(cat, split, file_path.name, file_path))
+    
+    # 对所有源类别的合并结果应用总数限制
+    if max_total and len(images) > max_total:
+        images = random.sample(images, max_total)
+    
+    return images
+
+
 def _collect_yolo(targets: List[str], src_dir: Path, image_exts: Set[str]) -> List[ImageInfo]:
     """从 YOLO 检测格式收集图片"""
     yaml_path = src_dir / "data.yaml"
@@ -150,6 +183,13 @@ def _detect_categories(src_dir: Path, merge_map: Dict[str, str], fmt: str) -> Tu
                 with open(csv_path, newline="", encoding="utf-8") as f:
                     labels.update(next(csv.reader(f))[1:])
         all_sources = sorted(labels)
+    elif fmt == "fabric":
+        labels = set()
+        for split in ["train", "test"]:
+            split_dir = src_dir / split
+            if split_dir.is_dir():
+                labels.update(e.name for e in split_dir.iterdir() if e.is_dir())
+        all_sources = sorted(labels)
     else:
         all_sources = sorted(e.name for e in src_dir.iterdir() if e.is_dir())
 
@@ -207,12 +247,17 @@ def run(dataset: str = "ibug") -> None:
     groups, order = _detect_categories(src_dir, merge_map, source_format)
 
     # 收集函数
-    collectors = {"yolo_detection": _collect_yolo, "roboflow": _collect_roboflow}
+    collectors = {"yolo_detection": _collect_yolo, "roboflow": _collect_roboflow, "fabric": _collect_fabric}
     collect_fn = collectors.get(source_format, _collect_folder)
 
     # 处理每个类别
     total_train = total_val = total_skipped = 0
     stats = []
+    
+    # 计算 fabric 数据集的合并类别总数限制
+    fabric_max_total = None
+    if source_format == "fabric" and balance > 0:
+        fabric_max_total = balance
 
     for target in tqdm(order, desc="数据准备", unit="类"):
         if target not in ds_classes or target in excluded:
@@ -222,7 +267,10 @@ def run(dataset: str = "ibug") -> None:
         is_merged = target in merge_rules
 
         # 收集图片
-        images = collect_fn(sources, src_dir, image_exts)
+        if source_format == "fabric" and fabric_max_total:
+            images = collect_fn(sources, src_dir, image_exts, max_total=fabric_max_total)
+        else:
+            images = collect_fn(sources, src_dir, image_exts)
         if not images:
             continue
 
@@ -255,8 +303,8 @@ def run(dataset: str = "ibug") -> None:
         total_val += n_val
         stats.append((target, n_train, n_val))
 
-    # 均衡化
-    if balance > 0:
+    # 均衡化 (fabric 格式在收集时已完成限制，无需再均衡)
+    if balance > 0 and source_format != "fabric":
         cap_train = max(1, int(balance * (1 - val_split)))
         cap_val = max(1, int(balance * val_split))
         log.info("均衡化: 每类 %d (train=%d / val=%d)", balance, cap_train, cap_val)
