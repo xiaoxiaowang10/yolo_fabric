@@ -6,24 +6,14 @@ seed: 42
 
 # —— 类别定义 ——（与 ImageFolder 字母序严格一致，YOLO 按此分配输出索引）
 classes:
-  - corduroy
   - cotton
-  - denim
-  - fleece
-  - leather
-  - linen
-  - satin_silk
-  - wool
+  - other
+  - polyester
 
 class_names:
-  corduroy:              "灯芯绒 / Corduroy"
   cotton:                "棉布 / Cotton"
-  denim:                 "牛仔 / Denim"
-  fleece:                "绒毛 / Fleece"
-  leather:               "皮革 / Leather"
-  linen:                 "麻布 / Linen"
-  satin_silk:            "丝缎 / Silk"
-  wool:                  "毛呢 / Wool"
+  other:                 "其他 / Other"
+  polyester:             "聚酯纤维 / Polyester"
 
 
 # —— 数据准备 ——

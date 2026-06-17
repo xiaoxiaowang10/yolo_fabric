@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -5,6 +6,25 @@ from ultralytics import YOLO
 
 from src.constants import TRAIN_KEYS
 from src.utils import CFG, CLASSES, log, resolve_model, SEED, set_seed
+
+def _resolve_spec(spec: Optional[str], default: str) -> str:
+    """解析模型名为完整的 .pt 文件名"""
+    if spec is None:
+        return default
+    spec = spec.strip()
+    if spec.endswith(".pt"):
+        return spec
+    if "-cls" in spec:
+        return f"{spec}.pt"
+    if re.match(r"^yolov?\d+", spec):
+        return f"{spec}-cls.pt"
+    return f"{spec}.pt"
+
+
+def _detect_yolo_version(name_short: str) -> Optional[str]:
+    """从模型名识别 YOLO 版本 (yolo26n → yolo26, yolov8n → yolov8)"""
+    m = re.match(r"(yolov?\d+)", name_short)
+    return m.group(1) if m else None
 
 
 def _build_kwargs(
@@ -49,7 +69,8 @@ def train(
     if not train_cfg:
         raise ValueError("train_cfg required")
 
-    model_path = resolve_model(model or train_cfg["pretrained"])
+    model_name = _resolve_spec(model, train_cfg["pretrained"])
+    model_path = resolve_model(model_name)
     train_dir = Path(data) / "train"
     if not train_dir.is_dir():
         raise FileNotFoundError(f"训练集不存在: {train_dir}")
@@ -62,25 +83,32 @@ def train(
     train_name = f"{dataset}_{name_short}"
     log.info("类别: %d | 模型: %s | 保存: %s", len(CLASSES), model_path, train_name)
 
-    # 准备配置
-    import re, shutil
+    # 识别 YOLO 版本并解析 YAML 配置
+    import shutil
 
     yaml_scaled = Path(f"config/{name_short}-cls.yaml")
     if not yaml_scaled.exists():
-        match = re.match(r"(yolo\d+)", name_short)
-        yaml_base = Path(f"config/{match.group(1) if match else 'yolo26'}-cls.yaml")
-        if not yaml_base.exists():
-            raise FileNotFoundError(f"YAML 模板不存在: {yaml_base}")
-        shutil.copy2(yaml_base, yaml_scaled)
+        version = _detect_yolo_version(name_short)
+        if version:
+            yaml_base = Path(f"config/{version}-cls.yaml")
+            if yaml_base.exists():
+                log.info("使用 %s 配置模板 → %s", yaml_base.name, yaml_scaled.name)
+                shutil.copy2(yaml_base, yaml_scaled)
 
     kwargs = _build_kwargs(train_cfg, locals())
 
-    YOLO(str(yaml_scaled)).load(model_path).train(
+    if yaml_scaled.exists():
+        log.info("加载 YAML 配置: %s + 权重: %s", yaml_scaled, model_path.name)
+        model = YOLO(str(yaml_scaled)).load(model_path)
+    else:
+        log.info("无本地 YAML 配置，从权重加载: %s (版本: %s)", model_path.name, _detect_yolo_version(name_short) or "?")
+        model = YOLO(str(model_path))
+
+    model.train(
         data=data,
         name=train_name,
         seed=SEED,
         exist_ok=True,
-        pretrained=True,
         save=True,
         resume=resume,
         split=CFG["prepare"]["val_subdir"],
@@ -90,52 +118,4 @@ def train(
     _save_best(train_cfg, train_name, data)
 
 
-def continue_train(
-    model: str,
-    data: str,
-    epochs: Optional[int] = None,
-    imgsz: Optional[int] = None,
-    batch: Optional[int] = None,
-    lr: Optional[float] = None,
-    device: Optional[str] = None,
-    workers: Optional[int] = None,
-    patience: Optional[int] = None,
-    train_cfg: Optional[Dict[str, Any]] = None,
-) -> None:
-    """继续训练已有模型"""
-    if not train_cfg:
-        raise ValueError("train_cfg required")
 
-    model_path = Path(model)
-    if not model_path.exists():
-        raise FileNotFoundError(f"模型不存在: {model}")
-
-    train_dir = Path(data) / "train"
-    if not train_dir.is_dir():
-        raise FileNotFoundError(f"训练集不存在: {train_dir}")
-
-    (Path(data) / CFG["prepare"]["val_subdir"]).mkdir(parents=True, exist_ok=True)
-    set_seed()
-
-    dataset = Path(data).name
-    train_name = f"{dataset}_{model_path.stem}"
-    log.info(
-        "加载: %s | 类别: %d | 保存: %s",
-        model_path.absolute(),
-        len(CLASSES),
-        train_name,
-    )
-
-    kwargs = _build_kwargs(train_cfg, locals())
-
-    YOLO(str(model)).train(
-        data=data,
-        name=train_name,
-        seed=SEED,
-        exist_ok=True,
-        save=True,
-        split=CFG["prepare"]["val_subdir"],
-        **kwargs,
-    )
-
-    _save_best(train_cfg, train_name, data)

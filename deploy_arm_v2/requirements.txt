@@ -1,0 +1,5 @@
+# 运行时依赖 (ncnn 用源码编译, 见 start.sh)
+flask>=3.0
+pillow>=10.0
+pyyaml>=6.0
+numpy>=1.24

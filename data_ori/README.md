@@ -1,58 +1,25 @@
-# 原始数据集下载
+# yueli 面料数据集
 
-将数据集下载后解压到此目录，目录名须与配置文件匹配。
-
-| 数据集 | 下载地址 | 存放目录 |
-|--------|----------|----------|
-| iBUG Fabrics | [Kaggle](https://www.kaggle.com/datasets/orchit/the-fabrics-dataset-by-ibug) | `data_ori/ibug/` |
-| WISUDAA | [Roboflow](https://universe.roboflow.com/ta-rgrwi/wisudaa) | `data_ori/wisudaa/` |
-| Fabric YOLO26 | [Roboflow](https://universe.roboflow.com/sai-amar-cv4kg/fabric-qxgmo/dataset/1) | `data_ori/fabric_yolo26/` |
-| Deep Learning Testing | [Roboflow](https://universe.roboflow.com/group-12-mcgzh/deep-learning-testing/dataset/1) | `data_ori/deep_learning_testing/` |
-
-## 目录结构要求
-
-### Folder 格式 (ibug)
+### 目录结构
 
 ```
-data_ori/ibug/
-├── Corduroy/
-│   ├── sample_001/
-│   │   ├── 0.png
-│   │   ├── 1.png
-│   │   └── ...
-│   └── ...
-├── Cotton/
-└── ...
+data_ori/yueli/
+├── cotton/       # 棉布 (48 张)
+├── other/        # 其他 (8 张)
+└── polyester/    # 聚酯纤维 (55 张)
 ```
 
-### Roboflow Multiclass 格式 (wisudaa, deep_learning_testing)
+### 格式说明
 
-```
-data_ori/wisudaa/
-├── train/
-│   ├── _classes.csv
-│   ├── image_001.jpg
-│   └── ...
-├── valid/
-│   ├── _classes.csv
-│   ├── image_002.jpg
-│   └── ...
+- 格式: 文件夹结构（类别名作为目录名，目录内直接存放图片）
+- 图片格式: `.jpg`
+- 总图片: ~111 张
+- 类别: 3 类（cotton / other / polyester）
+
+### 预处理
+
+```bash
+python main.py prepare yueli
 ```
 
-### YOLO Detection 格式 (fabric_yolo26)
-
-```
-data_ori/fabric_yolo26/
-├── data.yaml
-├── train/
-│   ├── images/
-│   │   └── *.jpg
-│   └── labels/
-│       └── *.txt
-├── valid/
-│   ├── images/
-│   └── labels/
-└── test/
-    ├── images/
-    └── labels/
-```
+预处理会将原始图片按类别复制到 `data/dataset_name/train/` 和 `data/dataset_name/val/` 目录下，并按全局 8 类映射归并。

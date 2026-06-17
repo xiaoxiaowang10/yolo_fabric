@@ -3,9 +3,10 @@ import sys
 from typing import Any, Dict
 
 from src.prepare import run as prepare
-from src.train import train, continue_train
+from src.train import train
 from src.predict import predict
 from src.export import export_onnx
+from src.export_arm import export_onnx_arm
 from src.incremental import incremental_train
 from src.utils import CFG, ModelNotFoundError, DatasetNotFoundError, log
 
@@ -17,13 +18,13 @@ def main() -> None:
 
     # prepare
     cmd = subparsers.add_parser("prepare", help="数据准备")
-    cmd.add_argument("dataset", nargs="?", default="ibug")
+    cmd.add_argument("dataset", nargs="?", default="yueli")
     cmd.set_defaults(fn=lambda a: prepare(a.dataset))
 
     # train
     cmd = subparsers.add_parser("train", help="模型训练")
     cmd.add_argument("--data", required=True)
-    cmd.add_argument("--model")
+    cmd.add_argument("--model", help="模型名称 (yolo26n / yolo26s-cls.pt 等, 默认: yolo26s-cls.pt)")
     cmd.add_argument("--epochs", type=int)
     cmd.add_argument("--imgsz", type=int)
     cmd.add_argument("--batch", type=int)
@@ -34,24 +35,6 @@ def main() -> None:
     cmd.add_argument("--resume", action="store_true")
     cmd.set_defaults(
         fn=lambda a: train(
-            **{k: v for k, v in vars(a).items() if k != "fn" and v is not None},
-            train_cfg=CFG["train"],
-        )
-    )
-
-    # continue
-    cmd = subparsers.add_parser("continue", help="继续训练")
-    cmd.add_argument("--model", required=True)
-    cmd.add_argument("--data", required=True)
-    cmd.add_argument("--epochs", type=int)
-    cmd.add_argument("--imgsz", type=int)
-    cmd.add_argument("--batch", type=int)
-    cmd.add_argument("--lr", type=float)
-    cmd.add_argument("--device")
-    cmd.add_argument("--workers", type=int)
-    cmd.add_argument("--patience", type=int)
-    cmd.set_defaults(
-        fn=lambda a: continue_train(
             **{k: v for k, v in vars(a).items() if k != "fn" and v is not None},
             train_cfg=CFG["train"],
         )
@@ -80,6 +63,12 @@ def main() -> None:
     cmd.add_argument("--imgsz", type=int, default=384)
     cmd.add_argument("--half", action="store_true")
     cmd.set_defaults(fn=lambda a: [export_onnx(m, a.imgsz, a.half) for m in a.model])
+
+    # export-arm
+    cmd = subparsers.add_parser("export-arm", help="导出 NCNN 模型 (树莓派)")
+    cmd.add_argument("--model", nargs="+", required=True)
+    cmd.add_argument("--imgsz", type=int)
+    cmd.set_defaults(fn=lambda a: [export_onnx_arm(m, a.imgsz) for m in a.model])
 
     # incremental
     cmd = subparsers.add_parser("incremental", help="增量训练 (添加新分类不从头训练)")

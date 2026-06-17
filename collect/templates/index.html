@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据采集 — {{ dataset }}</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #f5f5f5; color: #333; }
+
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff; padding: 16px 24px; text-align: center;
+}
+.header h1 { font-size: 20px; font-weight: 600; }
+.header sub { font-size: 12px; opacity: 0.8; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+
+/* Tab 切换 */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab {
+  flex: 1; padding: 10px; text-align: center; border-radius: 8px 8px 0 0;
+  background: #e9ecef; cursor: pointer; font-size: 14px; font-weight: 500;
+  transition: all 0.2s;
+}
+.tab:hover { background: #dee2e6; }
+.tab.active { background: #fff; color: #667eea; box-shadow: 0 -2px 4px rgba(0,0,0,0.05); }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* 类别选择 */
+.class-bar {
+  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+  justify-content: center;
+}
+.class-btn {
+  padding: 10px 24px; border: 2px solid #ddd; border-radius: 8px;
+  background: #fff; cursor: pointer; font-size: 15px; font-weight: 500;
+  transition: all 0.2s;
+}
+.class-btn:hover { border-color: #667eea; }
+.class-btn.active { border-color: #667eea; background: #667eea; color: #fff; }
+.class-btn .count {
+  display: inline-block; background: rgba(0,0,0,0.1); border-radius: 10px;
+  padding: 1px 8px; font-size: 12px; margin-left: 6px;
+}
+.class-btn.active .count { background: rgba(255,255,255,0.3); }
+
+/* 主区域 */
+.main-row {
+  display: flex; gap: 16px; align-items: flex-start;
+}
+@media (max-width: 640px) { .main-row { flex-direction: column; } }
+
+/* 摄像头区域 */
+.cam-area {
+  flex: 1; background: #fff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.cam-area video {
+  width: 100%; display: block; background: #000;
+  max-height: 400px; object-fit: contain;
+}
+.cam-controls {
+  display: flex; gap: 8px; padding: 12px; justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* 按钮 */
+.btn {
+  padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer;
+  font-size: 14px; font-weight: 500; transition: all 0.15s;
+}
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn-primary { background: #667eea; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #5a6fd6; }
+.btn-success { background: #28a745; color: #fff; }
+.btn-success:hover:not(:disabled) { background: #218838; }
+.btn-danger { background: #dc3545; color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #c82333; }
+.btn-outline { background: #fff; color: #333; border: 1px solid #ddd; }
+.btn-outline:hover:not(:disabled) { background: #f8f9fa; }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+
+/* 预览区 */
+.preview-area {
+  width: 240px; background: #fff; border-radius: 12px; padding: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+@media (max-width: 640px) { .preview-area { width: 100%; } }
+.preview-area h3 { font-size: 14px; margin-bottom: 8px; color: #666; }
+.preview-img {
+  width: 100%; border-radius: 8px; background: #f0f0f0;
+  display: none; max-height: 200px; object-fit: contain;
+}
+.preview-placeholder {
+  width: 100%; height: 160px; border-radius: 8px; background: #f0f0f0;
+  display: flex; align-items: center; justify-content: center;
+  color: #aaa; font-size: 14px;
+}
+.preview-info { margin-top: 8px; font-size: 13px; color: #666; }
+
+/* 统计 */
+.stats-bar {
+  margin-top: 16px; background: #fff; border-radius: 12px; padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.stats-bar h3 { font-size: 14px; margin-bottom: 12px; color: #666; }
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+.stat-card {
+  background: #f8f9fa; border-radius: 8px; padding: 12px; text-align: center;
+}
+.stat-card .label { font-size: 13px; color: #666; }
+.stat-card .value { font-size: 28px; font-weight: 700; color: #333; }
+.stat-total { background: linear-gradient(135deg, #667eea22, #764ba222); }
+.stat-total .value { color: #667eea; }
+
+/* 图片网格 (采集 & 管理共用) */
+.img-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+.img-item {
+  position: relative; border-radius: 8px; overflow: hidden;
+  aspect-ratio: 1; background: #f0f0f0; cursor: pointer;
+  border: 2px solid transparent; transition: border-color 0.15s;
+}
+.img-item:hover { border-color: #667eea; }
+.img-item.selected { border-color: #667eea; box-shadow: 0 0 0 2px rgba(102,126,234,0.3); }
+.img-item img { width: 100%; height: 100%; object-fit: cover; }
+.img-item .badge {
+  position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.5);
+  color: #fff; font-size: 10px; padding: 1px 4px; border-radius: 3px;
+}
+.img-item .del-btn {
+  position: absolute; top: 2px; right: 2px; width: 20px; height: 20px;
+  background: rgba(220,53,69,0.85); color: #fff; border: none;
+  border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 20px;
+  text-align: center; display: none;
+}
+.img-item:hover .del-btn { display: block; }
+
+/* 管理区域 */
+.manage-section {
+  background: #fff; border-radius: 12px; padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.manage-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+}
+.manage-header h3 { font-size: 14px; color: #666; }
+.manage-toolbar {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.manage-toolbar select {
+  padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;
+}
+.pagination {
+  display: flex; gap: 4px; justify-content: center; margin-top: 12px;
+}
+.pagination .btn { min-width: 36px; text-align: center; }
+.pagination .btn.current { background: #667eea; color: #fff; }
+
+/* 归类弹窗 */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 1000;
+  display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: #fff; border-radius: 12px; padding: 24px; max-width: 400px;
+  width: 90%; text-align: center;
+}
+.modal h3 { margin-bottom: 16px; font-size: 16px; }
+.modal-img { max-width: 200px; max-height: 200px; border-radius: 8px; margin-bottom: 12px; }
+.modal-class-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+.modal-class-btns .class-btn { padding: 8px 16px; font-size: 14px; }
+
+/* toast */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  padding: 10px 24px; border-radius: 8px; color: #fff; font-size: 14px;
+  z-index: 9999; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+.toast.success { background: #28a745; }
+.toast.error { background: #dc3545; }
+
+/* 摄像头设置面板 */
+.cam-settings {
+  background: #f8f9fa; border-top: 1px solid #eee; padding: 0;
+  max-height: 0; overflow: hidden; transition: max-height 0.3s, padding 0.3s;
+}
+.cam-settings.open { max-height: 400px; padding: 12px; overflow-y: auto; }
+.cam-settings-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.cam-setting-item label {
+  display: flex; justify-content: space-between; font-size: 12px;
+  color: #666; margin-bottom: 2px;
+}
+.cam-setting-item label span { color: #333; font-weight: 500; }
+.cam-setting-item input[type="range"] {
+  width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
+  background: #ddd; border-radius: 2px; outline: none;
+}
+.cam-setting-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  background: #667eea; border-radius: 50%; cursor: pointer;
+}
+.cam-setting-item select {
+  width: 100%; padding: 4px 6px; border: 1px solid #ddd;
+  border-radius: 4px; font-size: 12px;
+}
+.cam-setting-item .unsupported {
+  font-size: 11px; color: #aaa; font-style: italic;
+}
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>数据采集</h1>
+  <sub>数据集: {{ dataset }} | {{ classes|length }} 类</sub>
+</div>
+
+<div class="container">
+  <!-- Tab -->
+  <div class="tabs">
+    <div class="tab active" data-tab="capture" onclick="switchTab('capture')">📸 采集</div>
+    <div class="tab" data-tab="manage" onclick="switchTab('manage')">📁 管理</div>
+  </div>
+
+  <!-- ════ 采集面板 ════ -->
+  <div id="panel-capture" class="panel active">
+    <!-- 类别选择 -->
+    <div class="class-bar" id="class-bar">
+      {% for cls in classes %}
+      <button class="class-btn" data-class="{{ cls }}" onclick="selectClass('{{ cls }}')">
+        {{ class_names[cls] }}
+        <span class="count" id="count-{{ cls }}">0</span>
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- 主区域 -->
+    <div class="main-row">
+      <div class="cam-area">
+        <video id="video" autoplay playsinline muted></video>
+        <div style="text-align:center;font-size:12px;color:#888;padding:2px 0" id="cam-info"></div>
+        <div class="cam-controls">
+          <button class="btn btn-primary" id="cam-btn" onclick="toggleCamera()">📸 开启摄像头</button>
+          <button class="btn btn-success hidden" id="capture-btn" onclick="takePhoto()">📷 拍照</button>
+          <button class="btn btn-outline hidden" id="auto-btn" onclick="toggleAuto()">⏱ 连拍</button>
+          <select id="cam-select" class="hidden" onchange="switchCamera(this.value)"></select>
+          <select id="res-select" class="hidden" onchange="changeResolution(this.value)"></select>
+          <button class="btn btn-outline btn-sm hidden" id="settings-btn" onclick="toggleSettings()">⚙ 设置</button>
+        </div>
+        <div class="cam-settings" id="cam-settings">
+          <div class="cam-settings-grid" id="cam-settings-grid"></div>
+        </div>
+      </div>
+      <div class="preview-area">
+        <h3>最近采集</h3>
+        <img class="preview-img" id="preview" alt="">
+        <div class="preview-placeholder" id="preview-ph">拍照后预览</div>
+        <div class="preview-info" id="preview-info"></div>
+      </div>
+    </div>
+
+    <!-- 统计 -->
+    <div class="stats-bar">
+      <h3>采集统计</h3>
+      <div class="stats-grid" id="stats-grid"></div>
+    </div>
+  </div>
+
+  <!-- ════ 管理面板 ════ -->
+  <div id="panel-manage" class="panel">
+    <div class="manage-section">
+      <div class="manage-header">
+        <h3>数据管理 — 浏览与归类</h3>
+        <div class="manage-toolbar">
+          <select id="manage-class-select" onchange="loadManageList(1)">
+            {% for cls in classes %}
+            <option value="{{ cls }}">{{ class_names[cls] }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="loadManageList(managePage)">↺ 刷新</button>
+        </div>
+      </div>
+      <div class="img-grid" id="manage-grid"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 归类弹窗 -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>归类到</h3>
+    <img class="modal-img" id="modal-img" alt="">
+    <div class="modal-class-btns" id="modal-class-btns"></div>
+    <button class="btn btn-outline" onclick="closeModal()">取消</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="crop-canvas" style="display:none"></canvas>
+
+<script>
+const classes = {{ classes | tojson }};
+const classNames = {{ class_names | tojson }};
+const dataset = "{{ dataset }}";
+let selectedClass = classes[0];
+let stream = null;
+let autoTimer = null;
+let lastCaptureTime = 0;
+let saving = false;
+let managePage = 1;
+let modalSrcClass = '';
+let modalFilename = '';
+
+const $ = id => document.getElementById(id);
+
+/* ── Tab 切换 ── */
+const switchTab = (name) => {
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p =>
+    p.classList.toggle('active', p.id === 'panel-' + name));
+  if (name === 'manage') loadManageList(1);
+  if (name === 'capture') loadStats();
+};
+
+/* ── 类别选择 (采集面板) ── */
+const selectClass = (cls) => {
+  selectedClass = cls;
+  document.querySelectorAll('#class-bar .class-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.class === cls));
+};
+
+/* ── 摄像头 ── */
+let currentDeviceId = null;
+
+const getResolutions = (track) => {
+  // 读取摄像头支持的分辨率范围
+  const caps = track.getCapabilities ? track.getCapabilities() : {};
+  const w = caps.width || {};
+  const h = caps.height || {};
+  const minW = w.min || 320, maxW = w.max || 1920;
+  const minH = h.min || 240, maxH = h.max || 1080;
+  // 生成常见分辨率列表, 只保留摄像头支持范围内的
+  const common = [
+    [320, 240], [640, 480], [800, 600], [1024, 768],
+    [1280, 720], [1280, 960], [1600, 1200], [1920, 1080],
+    [2048, 1536], [2592, 1944], [3264, 2448], [3840, 2160],
+  ];
+  const supported = common.filter(([cw, ch]) => cw >= minW && cw <= maxW && ch >= minH && ch <= maxH);
+  // 如果列表为空, 至少加入最大分辨率
+  if (!supported.length) supported.push([maxW, maxH]);
+  // 确保最大分辨率在列表中
+  const hasMax = supported.some(([cw, ch]) => cw === maxW && ch === maxH);
+  if (!hasMax) supported.push([maxW, maxH]);
+  return supported;
+};
+
+const populateResSelect = (resolutions, currentW, currentH) => {
+  const sel = $('res-select');
+  sel.innerHTML = resolutions.map(([w, h]) => {
+    const sel = (w === currentW && h === currentH) ? ' selected' : '';
+    return `<option value="${w}x${h}"${sel}>${w}×${h}</option>`;
+  }).join('');
+  sel.classList.remove('hidden');
+};
+
+const openCamera = async (constraints) => {
+  stream = await navigator.mediaDevices.getUserMedia(constraints);
+  const v = $('video');
+  v.srcObject = stream;
+  await v.play().catch(() => {});
+  const track = stream.getVideoTracks()[0];
+  const s = track.getSettings();
+  v.style.aspectRatio = (s.width || v.videoWidth) + '/' + (s.height || v.videoHeight);
+  // 显示当前分辨率
+  $('cam-info').textContent = `${s.width}×${s.height}`;
+  $('cam-btn').textContent = '⏹ 关闭摄像头';
+  $('capture-btn').classList.remove('hidden');
+  $('auto-btn').classList.remove('hidden');
+  $('settings-btn').classList.remove('hidden');
+  // 记录当前设备
+  currentDeviceId = s.deviceId || (constraints.video && constraints.video.deviceId && constraints.video.deviceId.exact) || null;
+  // 填充分辨率选择器
+  const resolutions = getResolutions(track);
+  populateResSelect(resolutions, s.width, s.height);
+};
+
+const toggleCamera = async () => {
+  if (stream) { stopCamera(); return; }
+  try {
+    // 先用最小约束打开, 获取 track 后读取支持分辨率
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    const track = stream.getVideoTracks()[0];
+    const resolutions = getResolutions(track);
+    // 选最高分辨率
+    const [bestW, bestH] = resolutions[resolutions.length - 1];
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+    await openCamera({
+      video: {
+        facingMode: 'environment',
+        width: { ideal: bestW },
+        height: { ideal: bestH },
+      }
+    });
+    enumerateCameras();
+  } catch (e) {
+    toast('摄像头访问失败', 'error');
+  }
+};
+
+const stopCamera = () => {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  $('video').srcObject = null;
+  $('cam-btn').textContent = '📸 开启摄像头';
+  $('capture-btn').classList.add('hidden');
+  $('auto-btn').classList.add('hidden');
+  $('res-select').classList.add('hidden');
+  $('settings-btn').classList.add('hidden');
+  $('cam-settings').classList.remove('open');
+  $('cam-info').textContent = '';
+  stopAuto();
+};
+
+const enumerateCameras = async () => {
+  try {
+    const all = await navigator.mediaDevices.enumerateDevices();
+    const cams = all.filter(d => d.kind === 'videoinput');
+    const sel = $('cam-select');
+    sel.innerHTML = cams.map((d, i) =>
+      `<option value="${d.deviceId}">${d.label || '摄像头 ' + (i + 1)}</option>`).join('');
+    if (cams.length > 1) sel.classList.remove('hidden');
+    else sel.classList.add('hidden');
+  } catch (e) {}
+};
+
+const switchCamera = async (deviceId) => {
+  if (!stream) return;
+  stopCamera();
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: deviceId } }
+    });
+    const track = stream.getVideoTracks()[0];
+    const resolutions = getResolutions(track);
+    const [bestW, bestH] = resolutions[resolutions.length - 1];
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+    await openCamera({
+      video: {
+        deviceId: { exact: deviceId },
+        width: { ideal: bestW },
+        height: { ideal: bestH },
+      }
+    });
+  } catch (e) {}
+};
+
+const changeResolution = async (val) => {
+  if (!stream) return;
+  const [w, h] = val.split('x').map(Number);
+  const track = stream.getVideoTracks()[0];
+  const deviceId = track.getSettings().deviceId;
+  // 关闭当前流
+  stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  try {
+    const constraints = {
+      video: {
+        width: { exact: w },
+        height: { exact: h },
+      }
+    };
+    if (deviceId) constraints.video.deviceId = { exact: deviceId };
+    await openCamera(constraints);
+  } catch (e) {
+    // exact 可能不支持, 降级为 ideal
+    try {
+      const constraints = {
+        video: {
+          width: { ideal: w },
+          height: { ideal: h },
+        }
+      };
+      if (deviceId) constraints.video.deviceId = { exact: deviceId };
+      await openCamera(constraints);
+    } catch (e2) {
+      toast('该分辨率不可用', 'error');
+    }
+  }
+};
+
+/* ── 摄像头设置 ── */
+const CAM_CTRL_DEFS = [
+  { key: 'brightness',  label: '亮度',     type: 'range' },
+  { key: 'contrast',    label: '对比度',   type: 'range' },
+  { key: 'saturation',  label: '饱和度',   type: 'range' },
+  { key: 'sharpness',   label: '锐度',     type: 'range' },
+  { key: 'zoom',        label: '缩放',     type: 'range' },
+  { key: 'focusDistance',label: '对焦距离', type: 'range' },
+  { key: 'pan',         label: '水平偏移', type: 'range' },
+  { key: 'tilt',        label: '垂直偏移', type: 'range' },
+  { key: 'colorTemperature', label: '色温', type: 'range' },
+  { key: 'iso',         label: 'ISO',      type: 'range' },
+  { key: 'whiteBalanceMode', label: '白平衡', type: 'select', options: [
+    { value: 'manual', label: '手动' }, { value: 'continuous', label: '自动' }
+  ]},
+  { key: 'focusMode',   label: '对焦模式', type: 'select', options: [
+    { value: 'manual', label: '手动' }, { value: 'continuous', label: '自动' }
+  ]},
+  { key: 'exposureMode',label: '曝光模式', type: 'select', options: [
+    { value: 'manual', label: '手动' }, { value: 'continuous', label: '自动' }
+  ]},
+];
+
+const toggleSettings = () => {
+  const panel = $('cam-settings');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    return;
+  }
+  buildSettingsUI();
+  panel.classList.add('open');
+};
+
+const buildSettingsUI = () => {
+  if (!stream) return;
+  const track = stream.getVideoTracks()[0];
+  const caps = track.getCapabilities ? track.getCapabilities() : {};
+  const settings = track.getSettings ? track.getSettings() : {};
+  const grid = $('cam-settings-grid');
+  let html = '';
+
+  for (const def of CAM_CTRL_DEFS) {
+    const cap = caps[def.key];
+    if (!cap) continue; // 浏览器不支持该控制项
+
+    if (def.type === 'range') {
+      const min = cap.min ?? 0;
+      const max = cap.max ?? 100;
+      const step = cap.step ?? 1;
+      const cur = settings[def.key] ?? min;
+      html += `<div class="cam-setting-item">
+        <label>${def.label} <span id="sv-${def.key}">${cur}</span></label>
+        <input type="range" min="${min}" max="${max}" step="${step}" value="${cur}"
+          oninput="applyCamSetting('${def.key}', Number(this.value))">
+      </div>`;
+    } else if (def.type === 'select') {
+      const cur = settings[def.key] || '';
+      const opts = def.options.map(o =>
+        `<option value="${o.value}" ${o.value === cur ? 'selected' : ''}>${o.label}</option>`
+      ).join('');
+      html += `<div class="cam-setting-item">
+        <label>${def.label}</label>
+        <select onchange="applyCamSetting('${def.key}', this.value)">${opts}</select>
+      </div>`;
+    }
+  }
+
+  if (!html) {
+    html = '<div class="cam-setting-item"><span class="unsupported">当前浏览器不支持摄像头参数调节</span></div>';
+  }
+  grid.innerHTML = html;
+};
+
+const applyCamSetting = async (key, value) => {
+  if (!stream) return;
+  const track = stream.getVideoTracks()[0];
+  try {
+    await track.applyConstraints({ advanced: [{ [key]: value }] });
+    // 更新显示值
+    const sv = $('sv-' + key);
+    if (sv) sv.textContent = value;
+  } catch (e) {
+    toast('设置失败', 'error');
+  }
+};
+
+/* ── 连拍 ── */
+const toggleAuto = () => {
+  if (autoTimer) { stopAuto(); return; }
+  takePhoto();
+  autoTimer = setInterval(() => takePhoto(), 1500);
+  $('auto-btn').textContent = '⏹ 停止';
+  $('auto-btn').classList.add('btn-danger');
+  $('auto-btn').classList.remove('btn-outline');
+};
+
+const stopAuto = () => {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  $('auto-btn').textContent = '⏱ 连拍';
+  $('auto-btn').classList.remove('btn-danger');
+  $('auto-btn').classList.add('btn-outline');
+};
+
+/* ── 拍照保存 ── */
+const takePhoto = async () => {
+  const v = $('video');
+  if (!v.videoWidth || saving) return;
+  const now = Date.now();
+  if (now - lastCaptureTime < 500) return;
+  lastCaptureTime = now;
+  saving = true;
+
+  const c = $('crop-canvas');
+  c.width = v.videoWidth;
+  c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+
+  c.toBlob(async (blob) => {
+    if (!blob) { saving = false; return; }
+    const fd = new FormData();
+    fd.append('image', blob, 'capture.jpg');
+    fd.append('class', selectedClass);
+    try {
+      const r = await fetch('/api/capture', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (d.error) { toast(d.error, 'error'); return; }
+      const url = URL.createObjectURL(blob);
+      $('preview').src = url;
+      $('preview').style.display = 'block';
+      $('preview-ph').style.display = 'none';
+      $('preview-info').textContent = `${d.class_name} | ${d.filename}`;
+      toast(`${d.class_name} 采集成功`, 'success');
+      loadStats();
+    } catch (e) {
+      toast('保存失败', 'error');
+    } finally {
+      saving = false;
+    }
+  }, 'image/jpeg', 0.95);
+};
+
+/* ── 统计 ── */
+const loadStats = async () => {
+  try {
+    const r = await fetch('/api/stats');
+    const d = await r.json();
+    let html = `<div class="stat-card stat-total">
+      <div class="label">总计</div><div class="value">${d.total}</div></div>`;
+    for (const cls of classes) {
+      html += `<div class="stat-card">
+        <div class="label">${classNames[cls]}</div>
+        <div class="value">${d.classes[cls] || 0}</div></div>`;
+      const el = $('count-' + cls);
+      if (el) el.textContent = d.classes[cls] || 0;
+    }
+    $('stats-grid').innerHTML = html;
+  } catch (e) {}
+};
+
+/* ── 管理面板: 浏览图片 ── */
+const loadManageList = async (page) => {
+  managePage = page;
+  const cls = $('manage-class-select').value;
+  try {
+    const r = await fetch(`/api/list?class=${cls}&page=${page}&per_page=30`);
+    const d = await r.json();
+    if (!d.files.length) {
+      $('manage-grid').innerHTML = '<div style="color:#aaa;font-size:13px;padding:20px;text-align:center">该类别暂无图片</div>';
+      $('pagination').innerHTML = '';
+      return;
+    }
+    $('manage-grid').innerHTML = d.files.map(f =>
+      `<div class="img-item" onclick="openModal('${cls}','${f.filename}')">
+        <img src="/api/image/${cls}/${f.filename}" loading="lazy" alt="${f.filename}">
+        <span class="badge">${f.size_kb}KB</span>
+        <button class="del-btn" onclick="event.stopPropagation();deleteImg('${cls}','${f.filename}')" title="删除">×</button>
+      </div>`
+    ).join('');
+
+    // 分页
+    let pgHtml = '';
+    if (d.pages > 1) {
+      pgHtml += `<button class="btn btn-outline btn-sm" ${page <= 1 ? 'disabled' : ''} onclick="loadManageList(${page - 1})">◀</button>`;
+      for (let i = 1; i <= d.pages; i++) {
+        if (d.pages > 7 && Math.abs(i - page) > 2 && i !== 1 && i !== d.pages) {
+          if (i === page - 3 || i === page + 3) pgHtml += '<span style="padding:4px">…</span>';
+          continue;
+        }
+        pgHtml += `<button class="btn btn-sm ${i === page ? 'btn-primary current' : 'btn-outline'}" onclick="loadManageList(${i})">${i}</button>`;
+      }
+      pgHtml += `<button class="btn btn-outline btn-sm" ${page >= d.pages ? 'disabled' : ''} onclick="loadManageList(${page + 1})">▶</button>`;
+    }
+    $('pagination').innerHTML = pgHtml;
+  } catch (e) {}
+};
+
+/* ── 归类弹窗 ── */
+const openModal = (srcCls, filename) => {
+  modalSrcClass = srcCls;
+  modalFilename = filename;
+  $('modal-img').src = `/api/image/${srcCls}/${filename}`;
+  // 生成目标类别按钮 (排除当前类别)
+  $('modal-class-btns').innerHTML = classes
+    .filter(c => c !== srcCls)
+    .map(c => `<button class="class-btn" onclick="moveImage('${c}')">${classNames[c]}</button>`)
+    .join('');
+  $('modal').classList.add('show');
+};
+
+const closeModal = () => {
+  $('modal').classList.remove('show');
+};
+
+// 点击遮罩关闭
+$('modal').addEventListener('click', (e) => {
+  if (e.target === $('modal')) closeModal();
+});
+
+/* ── 归类 (移动图片) ── */
+const moveImage = async (dstCls) => {
+  const fd = new FormData();
+  fd.append('src_class', modalSrcClass);
+  fd.append('dst_class', dstCls);
+  fd.append('filename', modalFilename);
+  try {
+    const r = await fetch('/api/move', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.error) { toast(d.error, 'error'); return; }
+    toast(`已归类到 ${d.dst_class_name}`, 'success');
+    closeModal();
+    loadManageList(managePage);
+    loadStats();
+  } catch (e) {
+    toast('归类失败', 'error');
+  }
+};
+
+/* ── 删除 ── */
+const deleteImg = async (cls, filename) => {
+  if (!confirm('确认删除 ' + filename + ' ?')) return;
+  const fd = new FormData();
+  fd.append('class', cls);
+  fd.append('filename', filename);
+  try {
+    const r = await fetch('/api/delete', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.success) {
+      toast('已删除', 'success');
+      loadManageList(managePage);
+      loadStats();
+    } else {
+      toast(d.error || '删除失败', 'error');
+    }
+  } catch (e) {}
+};
+
+/* ── Toast ── */
+const toast = (msg, type = 'success') => {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + type + ' show';
+  setTimeout(() => el.classList.remove('show'), 1500);
+};
+
+/* ── 初始化 ── */
+selectClass(classes[0]);
+loadStats();
+</script>
+</body>
+</html>

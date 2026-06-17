@@ -1,0 +1,14 @@
+# 数据采集配置 (独立运行, 不依赖外部文件)
+dataset: "yueli"           # 数据集名称, 对应 data_ori 下的子目录
+port: 5000                 # 服务端口
+data_dir: "data_ori"       # 数据保存根目录 (相对于本脚本所在目录)
+
+classes:
+  - cotton
+  - other
+  - polyester
+
+class_names:
+  cotton: "棉 / Cotton"
+  other: "其他 / Other"
+  polyester: "涤纶 / Polyester"

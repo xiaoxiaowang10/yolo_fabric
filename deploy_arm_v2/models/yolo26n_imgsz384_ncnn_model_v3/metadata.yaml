@@ -1,0 +1,7 @@
+names:
+  '0': cotton
+  '1': other
+  '2': polyester
+task: classify
+imgsz: 384
+model: yueli_yolo26n

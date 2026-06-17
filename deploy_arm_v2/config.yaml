@@ -1,0 +1,20 @@
+port: 3000
+models_dir: "models"
+
+# 目标: YOLO26n-cls 树莓派 4B → <100ms
+# 方案: NCNN + 384×384 (与训练/导出一致) + 4 线程
+imgsz: 384
+num_threads: 4
+
+unknown_threshold: 0.1
+webcam_interval_ms: 1500
+
+classes:
+  - cotton
+  - other
+  - polyester
+
+class_names:
+  cotton: "棉 / Cotton"
+  other: "其他 / Other"
+  polyester: "涤纶 / Polyester"

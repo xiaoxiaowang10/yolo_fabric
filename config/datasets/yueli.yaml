@@ -1,0 +1,7 @@
+raw_data: "data_ori/yueli"
+output_dir: "data/yueli"
+
+classes:
+  - cotton
+  - other
+  - polyester
